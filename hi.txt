@@ -1,0 +1,692 @@
+
+**EXPERIMENT 3: ERROR HANDLING, STATIC RESOURCES AND RATE-LIMITING MECHANISMS**
+
+AIM:
+
+To implement a simple web application using Express.js to demonstrate error handling, static resources and rate-limiting mechanisms.
+
+PROCEDURE:
+
+1. Create project folder
+
+mkdir security-demo
+cd security-demo
+
+2. Initialize project
+
+npm init -y
+
+3. Install packages
+
+npm install express express-rate-limit
+
+4. Create project structure
+
+security-demo/
+├── public/
+│   ├── index.html
+│   ├── image.jpg
+│   └── style.css
+├── app.js
+├── package.json
+└── node_modules/
+
+5. Create index.html
+
+<!DOCTYPE html>
+<html>
+<head>
+<title>Express Static Resource Demo</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<h1>Welcome to Express.js</h1>
+<p>This page demonstrates static resources.</p>
+<img src="image.jpg" width="300">
+</body>
+</html>
+
+6. Create style.css
+
+body{
+ font-family: Arial;
+ text-align: center;
+}
+
+h1{
+ color: blue;
+}
+
+p{
+ color: green;
+}
+
+7. Create app.js
+
+const express = require('express');
+const rateLimit = require('express-rate-limit');
+
+const app = express();
+
+app.use(express.static('public'));
+
+const limiter = rateLimit({
+ windowMs: 1 * 60 * 1000,
+ max: 5,
+ message: 'Too many requests, please try again later.'
+});
+
+app.use(limiter);
+
+app.get('/hello', (req,res)=>{
+ res.send('Hello Express.js');
+});
+
+app.use((req,res)=>{
+ res.status(404).send('Page Not Found');
+});
+
+app.listen(3000, ()=>{
+ console.log('Server running at http://localhost:3000');
+});
+
+8. EXECUTION
+
+node app.js
+
+9. OUTPUTS
+
+URL 1:
+http://localhost:3000/
+
+Displays index.html with CSS and image.
+
+URL 2:
+http://localhost:3000/hello
+
+Displays:
+Hello Express.js
+
+INVALID URL:
+
+Displays:
+Page Not Found
+
+AFTER 5 REQUESTS IN ONE MINUTE:
+
+Displays:
+Too many requests, please try again later.
+
+10. RESULT
+
+Successfully demonstrated static resources, error handling and rate limiting in Express.js.
+
+
+------------------------------------------------------------
+
+**EXPERIMENT 4: HIERARCHICAL ROUTING IN EXPRESS.JS**
+
+AIM:
+
+To design and configure hierarchical routing in Express.js using a modular approach with separate routes, enabling structured URL handling and middleware application.
+
+PROCEDURE:
+
+1. Create project
+
+mkdir hierarchical-routing
+cd hierarchical-routing
+
+2. Initialize project
+
+npm init -y
+
+3. Install Express
+
+npm install express
+
+4. Create project structure
+
+college-app/
+│
+├── app.js
+│
+└── routes/
+    ├── college.js
+    ├── students.js
+    ├── profile.js
+    └── marks.js
+
+5. Create app.js
+
+const express = require('express');
+
+const app = express();
+
+const collegeRouter = require('./routes/college');
+
+app.use('/college', collegeRouter);
+
+app.listen(3000, () => {
+    console.log('Server running on port 3000');
+});
+
+6. Create routes/college.js
+
+const express = require('express');
+
+const router = express.Router();
+
+const studentsRouter = require('./students');
+const marksRouter = require('./marks');
+
+// Middleware at /college level
+router.use((req, res, next) => {
+    console.log('College middleware:', req.method, req.originalUrl);
+    next();
+});
+
+router.use('/students', studentsRouter);
+router.use('/marks', marksRouter);
+
+module.exports = router;
+
+7. Create routes/students.js
+
+const express = require('express');
+
+const router = express.Router();
+const profileRouter = require('./profile');
+
+router.use('/profile', profileRouter);
+
+module.exports = router;
+
+8. Create routes/profile.js
+
+const express = require('express');
+
+const router = express.Router();
+
+// Middleware only for profile routes
+router.use((req, res, next) => {
+    console.log('Profile middleware');
+    next();
+});
+
+router.get('/view', (req, res) => {
+    res.send('Student Profile View');
+});
+
+router.get('/:id', (req, res) => {
+    res.send(`Student Profile ID: ${req.params.id}`);
+});
+
+module.exports = router;
+
+9. Create routes/marks.js
+
+const express = require('express');
+
+const router = express.Router();
+
+router.get('/view', (req, res) => {
+    res.send('Marks View');
+});
+
+router.get('/:id', (req, res) => {
+    res.send(`Marks for Student ID: ${req.params.id}`);
+});
+
+module.exports = router;
+
+10. EXECUTION
+
+node app.js
+
+11. OUTPUT
+
+URL                                      Handler
+
+/college/students/profile/view          Student profile view
+
+/college/students/profile/101            Profile of student 101
+
+/college/marks/view                      Marks view
+
+/college/marks/101                       Marks of student 101
+
+
+------------------------------------------------------------
+
+**EXPERIMENT 5: REQUEST VALIDATION USING EXPRESS-VALIDATOR**
+
+AIM:
+
+To design and implement a request validation mechanism in an Express.js application using express-validator by validating name, email and age.
+
+PROCEDURE:
+
+1. Create project
+
+mkdir validation-demo
+cd validation-demo
+
+2. Initialize project
+
+npm init -y
+
+3. Install packages
+
+npm install express express-validator
+
+4. Create project structure
+
+validation-demo/
+│
+├── middleware/
+│   └── validator.js
+│
+├── routes/
+│   └── userRoutes.js
+│
+└── app.js
+
+5. Create middleware/validator.js
+
+const { body } = require('express-validator');
+
+exports.userValidation = [
+    body('name').notEmpty().withMessage('Name is required'),
+    body('email').isEmail().withMessage('Invalid email format'),
+    body('age').isInt({min:18}).withMessage('Age must be at least 18')
+];
+
+6. Create routes/userRoutes.js
+
+const express = require('express');
+const router = express.Router();
+
+const { validationResult } = require('express-validator');
+const { userValidation } = require('../middleware/validator');
+
+router.post('/register', userValidation, (req, res) => {
+
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+        return res.status(400).json({errors: errors.array()});
+    }
+
+    res.send('Validation Successful');
+
+});
+
+module.exports = router;
+
+7. Create app.js
+
+const express = require('express');
+const app = express();
+
+const userRoutes = require('./routes/userRoutes');
+
+app.use(express.json());
+
+app.use('/user', userRoutes);
+
+app.listen(3000, () => {
+    console.log('Server running at http://localhost:3000');
+});
+
+8. EXECUTION
+
+node app.js
+
+9. TESTING
+
+Method: POST
+
+URL:
+http://localhost:3000/user/register
+
+Valid JSON:
+
+{
+    "name": "John",
+    "email": "john@gmail.com",
+    "age": 25
+}
+
+OUTPUT:
+
+Validation Successful
+
+Invalid JSON:
+
+{
+    "name": "",
+    "email": "abc",
+    "age": 15
+}
+
+OUTPUT:
+
+Name is required
+Invalid email format
+Age must be at least 18
+
+10. RESULT
+
+Successfully implemented request validation using express-validator middleware.
+
+
+------------------------------------------------------------
+
+**EXPERIMENT 6: IMPLEMENT POST AND GET METHODS FOR A STUDENT COLLECTION USING EXPRESS.JS AND MONGOOSE**
+
+AIM:
+
+Implement the POST and GET methods for a Student collection using Express.js and Mongoose to perform Create and Read operations. Return an appropriate message in the response.
+
+PROCEDURE:
+
+1. Install packages
+
+npm install express mongoose
+
+2. Create app.js
+
+const express = require('express');
+const mongoose = require('mongoose');
+
+const app = express();
+
+// Middleware to parse JSON request data
+app.use(express.json());
+
+app.set('port', 3000);
+
+// Connect to MongoDB
+
+mongoose.connect('mongodb://127.0.0.1:27017/CollegeDB')
+    .then(() => console.log('MongoDB connected'))
+    .catch(err => console.log(err));
+
+// Define Student schema
+
+const studentSchema = new mongoose.Schema({
+    name: String,
+    usn: String,
+    branch: String,
+    semester: Number
+});
+
+// Create Student model
+
+const Student = mongoose.model('Student', studentSchema);
+
+// POST: Create a new student
+
+app.post('/students', async (req, res) => {
+    try {
+        const student = new Student(req.body);
+        await student.save();
+
+        res.status(201).json({
+            message: 'Student created successfully',
+            student: student
+        });
+
+    } catch (err) {
+        res.status(500).json({
+            message: 'Error creating student',
+            error: err.message
+        });
+    }
+});
+
+// GET: Read all students
+
+app.get('/students', async (req, res) => {
+    try {
+        const students = await Student.find();
+
+        res.status(200).json({
+            message: 'Students retrieved successfully',
+            students: students
+        });
+
+    } catch (err) {
+        res.status(500).json({
+            message: 'Error retrieving students',
+            error: err.message
+        });
+    }
+});
+
+// Start server
+
+app.listen(3000, () => {
+    console.log('Server running on port 3000');
+});
+
+module.exports = app;
+
+3. TEST THE POST METHOD
+
+Send a POST request to:
+
+http://localhost:3000/students
+
+In Postman, select Body → raw → JSON.
+
+Request body:
+
+{
+    "name": "Rahul",
+    "usn": "4VV23IS001",
+    "branch": "ISE",
+    "semester": 5
+}
+
+4. TEST THE GET METHOD
+
+Send a GET request to:
+
+http://localhost:3000/students
+
+5. OUTPUT
+
+GET:
+
+{
+    "message": "Students retrieved successfully",
+    "students": [
+        {
+            "_id": "generated_by_mongodb",
+            "name": "Rahul",
+            "usn": "4VV23IS001",
+            "branch": "ISE",
+            "semester": 5
+        }
+    ]
+}
+
+POST:
+
+{
+    "message": "Student created successfully",
+    "student": {
+        "name": "Rahul",
+        "usn": "4VV23IS001",
+        "branch": "ISE",
+        "semester": 5,
+        "_id": "generated_by_mongodb"
+    }
+}
+
+6. NOTE
+
+Method             Endpoint        Purpose
+
+POST               /students       Creates a new student record
+
+GET                /students       Retrieves all student records
+
+Mongoose operations:
+
+POST: student.save()
+
+GET: Student.find()
+
+
+------------------------------------------------------------
+
+**EXPERIMENT 7: IMPLEMENT UPDATE AND DELETE METHODS FOR A STUDENT COLLECTION USING EXPRESS.JS AND MONGOOSE**
+
+1. Create app.js
+
+const express = require('express');
+const mongoose = require('mongoose');
+
+const app = express();
+
+app.use(express.json());
+
+// Connect to MongoDB
+
+mongoose.connect('mongodb://127.0.0.1:27017/CollegeDB')
+    .then(() => console.log('MongoDB connected'))
+    .catch(err => console.log(err));
+
+// Define Student schema
+
+const studentSchema = new mongoose.Schema({
+    name: String,
+    usn: String,
+    branch: String,
+    semester: Number
+});
+
+const Student = mongoose.model('Student', studentSchema);
+
+// UPDATE: Update a student using USN
+
+app.put('/students/:usn', async (req, res) => {
+    try {
+        const student = await Student.findOneAndUpdate(
+            { usn: req.params.usn },
+            req.body,
+            { new: true, runValidators: true }
+        );
+
+        if (!student) {
+            return res.status(404).json({
+                message: 'Student not found'
+            });
+        }
+
+        res.status(200).json({
+            message: 'Student updated successfully',
+            student: student
+        });
+
+    } catch (err) {
+        res.status(500).json({
+            message: 'Error updating student',
+            error: err.message
+        });
+    }
+});
+
+// DELETE: Delete a student using USN
+
+app.delete('/students/:usn', async (req, res) => {
+    try {
+        const student = await Student.findOneAndDelete({
+            usn: req.params.usn
+        });
+
+        if (!student) {
+            return res.status(404).json({
+                message: 'Student not found'
+            });
+        }
+
+        res.status(200).json({
+            message: 'Student deleted successfully',
+            student: student
+        });
+
+    } catch (err) {
+        res.status(500).json({
+            message: 'Error deleting student',
+            error: err.message
+        });
+    }
+});
+
+// Start the server
+
+app.listen(3000, () => {
+    console.log('Server running on port 3000');
+});
+
+module.exports = app;
+
+2. EXECUTION
+
+node app.js
+
+3. TEST THE OUTPUT
+
+Create suitable records:
+
+POST request
+
+http://localhost:3000/students
+
+First student:
+
+{
+    "name": "Rahul",
+    "usn": "4VV23IS001",
+    "branch": "ISE",
+    "semester": 5
+}
+
+Second student:
+
+{
+    "name": "xyz",
+    "usn": "4VV23IS002",
+    "branch": "ISE",
+    "semester": 5
+}
+
+4. TEST THE UPDATE OPERATION
+
+Method: PUT
+
+http://localhost:3000/students/4VV23IS001
+
+Request body:
+
+{
+    "name": "Rahul Kumar",
+    "branch": "CSE",
+    "semester": 6
+}
+
+5. TEST THE DELETE OPERATION
+
+Method: DELETE
+
+http://localhost:3000/students/4VV23IS002
+
+No request body is required.
+
+6. RESULT
+
+Successfully implemented UPDATE and DELETE operations using Express.js and Mongoose.
