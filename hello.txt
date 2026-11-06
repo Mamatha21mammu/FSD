@@ -1,0 +1,360 @@
+6:
+const express = require('express');
+const mongoose = require('mongoose');
+
+const app = express();
+
+// Middleware to parse JSON request data
+app.use(express.json());
+
+app.set('port', 3000);
+
+// Connect to MongoDB
+mongoose.connect('mongodb://127.0.0.1:27017/CollegeDB')
+    .then(() => console.log('MongoDB connected'))
+    .catch(err => console.log(err));
+
+// Define Student schema
+const studentSchema = new mongoose.Schema({
+    name: String,
+    usn: String,
+    branch: String,
+    semester: Number
+});
+
+
+
+// Create Student model
+const Student = mongoose.model('Student', studentSchema);
+
+// POST: Create a new student
+app.post('/students', async (req, res) => {
+    try {
+        const student = new Student(req.body);
+        await student.save();
+
+        res.status(201).json({
+            message: 'Student created successfully',
+            student: student
+        });
+    } catch (err) {
+        res.status(500).json({
+            message: 'Error creating student',
+            error: err.message
+        });
+    }
+});
+
+// GET: Read all students
+app.get('/students', async (req, res) => {
+    try {
+        const students = await Student.find();
+
+        res.status(200).json({
+            message: 'Students retrieved successfully',
+            students: students
+        });
+    } catch (err) {
+        res.status(500).json({
+            message: 'Error retrieving students',
+            error: err.message
+        });
+    }
+});
+
+// Start server
+app.listen(3000, () => {
+    console.log('Server running on port 3000');
+});
+
+module.exports = app;
+
+
+7:
+
+const express = require('express');
+const mongoose = require('mongoose');
+
+const app = express();
+
+app.use(express.json());
+
+// Connect to MongoDB
+mongoose.connect('mongodb://127.0.0.1:27017/CollegeDB')
+    .then(() => console.log('MongoDB connected'))
+    .catch(err => console.log(err));
+
+// Define Student schema
+const studentSchema = new mongoose.Schema({
+    name: String,
+    usn: String,
+    branch: String,
+    semester: Number
+});
+
+// Create Student model
+const Student = mongoose.model('Student', studentSchema);
+
+// UPDATE: Update a student using USN
+app.put('/students/:usn', async (req, res) => {
+    try {
+        const student = await Student.findOneAndUpdate(
+            { usn: req.params.usn },
+            req.body,
+            { new: true, runValidators: true }
+        );
+
+        if (!student) {
+            return res.status(404).json({
+                message: 'Student not found'
+            });
+        }
+
+        res.status(200).json({
+            message: 'Student updated successfully',
+            student: student
+        });
+    } catch (err) {
+        res.status(500).json({
+            message: 'Error updating student',
+            error: err.message
+        });
+    }
+});
+
+// DELETE: Delete a student using USN
+app.delete('/students/:usn', async (req, res) => {
+    try {
+        const student = await Student.findOneAndDelete({
+            usn: req.params.usn
+        });
+
+        if (!student) {
+            return res.status(404).json({
+                message: 'Student not found'
+            });
+        }
+
+        res.status(200).json({
+            message: 'Student deleted successfully',
+            student: student
+        });
+    } catch (err) {
+        res.status(500).json({
+            message: 'Error deleting student',
+            error: err.message
+        });
+    }
+});
+
+// Start the server
+app.listen(3000, () => {
+    console.log('Server running on port 3000');
+});
+
+module.exports = app;
+
+
+3:
+html
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Express Static Resource Demo</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>Welcome to Express.js</h1>
+    <p>This page demonstrates static resources.</p>
+    <img src="image.jpg" width="300">
+</body>
+</html>
+
+style.css
+
+body {
+    font-family: Arial;
+    text-align: center;
+}
+
+h1 {
+    color: blue;
+}
+
+p {
+    color: green;
+}
+
+appp:
+
+const express = require('express');
+const rateLimit = require('express-rate-limit');
+
+const app = express();
+
+// Serve static resources
+app.use(express.static('public'));
+
+// Rate limiting configuration
+const limiter = rateLimit({
+    windowMs: 1 * 60 * 1000,
+    max: 5,
+    message: 'Too many requests, please try again later.'
+});
+
+app.use(limiter);
+
+// GET route
+app.get('/hello', (req, res) => {
+    res.send('Hello Express.js');
+});
+
+// Error handling – 404
+app.use((req, res) => {
+    res.status(404).send('Page Not Found');
+});
+
+// Start server
+app.listen(3000, () => {
+    console.log('Server running at http://localhost:3000');
+});
+
+
+
+
+
+
+4:
+
+
+const express = require('express');
+
+const app = express();
+
+const collegeRouter = require('./routes/college');
+
+app.use('/college', collegeRouter);
+
+app.listen(3000, () => {
+    console.log('Server running on port 3000');
+});
+
+college :
+const express = require('express');
+
+const router = express.Router();
+
+const studentsRouter = require('./students');
+const marksRouter = require('./marks');
+
+// Middleware at /college level
+router.use((req, res, next) => {
+    console.log('College middleware:', req.method, req.originalUrl);
+    next();
+});
+
+router.use('/students', studentsRouter);
+router.use('/marks', marksRouter);
+
+module.exports = router;
+
+
+student:
+
+const express = require('express');
+
+const router = express.Router();
+
+const profileRouter = require('./profile');
+
+router.use('/profile', profileRouter);
+
+module.exports = router;
+
+
+profile:
+
+const express = require('express');
+
+const router = express.Router();
+
+// Middleware only for profile routes
+router.use((req, res, next) => {
+    console.log('Profile middleware');
+    next();
+});
+
+router.get('/view', (req, res) => {
+    res.send('Student Profile View');
+});
+
+router.get('/:id', (req, res) => {
+    res.send(`Student Profile ID: ${req.params.id}`);
+});
+
+module.exports = router;
+
+marks:
+
+const express = require('express');
+
+const router = express.Router();
+
+router.get('/view', (req, res) => {
+    res.send('Marks View');
+});
+
+router.get('/:id', (req, res) => {
+    res.send(`Marks for Student ID: ${req.params.id}`);
+});
+
+module.exports = router;
+
+
+5:
+app:
+const express = require('express');
+const app = express();
+
+const userRoutes = require('./routes/userRoutes');
+
+app.use(express.json());
+
+app.use('/user', userRoutes);
+
+app.listen(3000, () => {
+    console.log('Server running at http://localhost:3000');
+});
+
+
+userRoutes:
+const express = require('express');
+const router = express.Router();
+
+const { validationResult } = require('express-validator');
+const { userValidation } = require('../middleware/validator');
+
+router.post('/register', userValidation, (req, res) => {
+
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+
+    res.send('Validation Successful');
+
+});
+
+module.exports = router;
+
+validator:
+
+const { body } = require('express-validator');
+
+exports.userValidation = [
+    body('name').notEmpty().withMessage('Name is required'),
+    body('email').isEmail().withMessage('Invalid email format'),
+    body('age').isInt({min:18}).withMessage('Age must be at least 18')
+];
